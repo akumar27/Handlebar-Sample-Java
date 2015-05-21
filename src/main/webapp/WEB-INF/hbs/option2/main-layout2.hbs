@@ -1,0 +1,27 @@
+<div id="doc-header">
+  {{> header}}
+</div>
+
+<div><a href="option2?locale=en&template=example-module-a">Template A with Locale='en'</a></div>
+<div><a href="option2?locale=sp&template=example-module-a">Template A with Locale='sp'</a></div>
+<div><a href="option2?locale=en&template=example-module-b">Template B with Locale='en'</a></div>
+<div><a href="option2?locale=sp&template=example-module-b">Template B with Locale='sp'</a></div>
+
+<div class="page-main">
+	<div id="doc-main">    
+	
+	{{#if_eq template "example-module-a2"}}
+		
+		{{> option2/example-module-a2}}
+	{{/if_eq}}
+	
+	{{#if_eq template "example-module-b2"}}
+		{{> option2/example-module-b2}}
+	{{/if_eq}}
+ 	{{#block "modulecontent" }}
+	{{/block}}
+  </div> <!-- /.doc-main -->
+</div> <!-- /.page-main -->
+<div id="doc-footer">
+  {{> footer}}
+</div>

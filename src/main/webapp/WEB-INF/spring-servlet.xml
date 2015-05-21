@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:sec="http://www.springframework.org/schema/security" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+       	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+	<!-- turn on annotations -->
+	<context:component-scan base-package="com.voya" />
+	<mvc:annotation-driven />
+	<mvc:resources mapping="/assets/**" location="/assets/" />
+
+	<mvc:interceptors>
+		<bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor" />
+	</mvc:interceptors>
+	<aop:aspectj-autoproxy />
+
+
+	<!-- handlebars view resolver -->
+	<bean id="eachHelper" class="com.github.jknack.handlebars.helper.EachHelper" />
+	<bean id="ifHelper" class="com.github.jknack.handlebars.helper.IfHelper" />
+
+
+	<util:map id="helpersHandleBar" value-type="com.github.jknack.handlebars.Helper">
+		<entry key="each" value-ref="eachHelper" />
+		<entry key="if" value-ref="ifHelper" />
+	</util:map>
+
+	<bean id="viewResolver"
+		class="com.github.jknack.handlebars.springmvc.HandlebarsViewResolver">
+		<property name="prefix" value="/WEB-INF/hbs/" />
+		<property name="cache" value="true" />
+		<property name="suffix" value=".hbs" />
+		<property name="valueResolvers">
+			<list>
+				<util:constant
+					static-field="com.github.jknack.handlebars.JsonNodeValueResolver.INSTANCE" />
+				<util:constant
+					static-field="com.github.jknack.handlebars.context.MapValueResolver.INSTANCE" />
+				<util:constant
+					static-field="com.github.jknack.handlebars.context.JavaBeanValueResolver.INSTANCE" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- i18n -->
+	<bean id="localeResolver"
+		class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+		<property name="defaultLocale" value="pt_BR" />
+	</bean>
+
+</beans>
