@@ -22,6 +22,7 @@ import org.springframework.web.servlet.ModelAndView;
 import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.JsonNodeValueResolver;
+import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.cache.HighConcurrencyTemplateCache;
 import com.github.jknack.handlebars.io.FileTemplateLoader;
 import com.github.jknack.handlebars.io.TemplateLoader;
@@ -65,14 +66,15 @@ public class HomeController {
 		return sb.toString();
 	}
 
-	@RequestMapping("/option1")
+	@RequestMapping("/option1e")
 	@ResponseBody
-	public String option1Controller(
+	public ModelAndView option1eController(
 			HttpServletRequest request,
 			HttpServletResponse response,
 			@RequestParam(value = "template", required = false) String template,
 			@RequestParam(value = "locale", required = false) String locale) {
-		String templateToRender = "option1/example-module-a";
+		String templateToRender = "example-module-a";
+		ModelAndView mav = new ModelAndView("option1/main-layout");
 		if (template != null) {
 			templateToRender = template;
 		}
@@ -84,12 +86,61 @@ public class HomeController {
 			String value = "{ \"config\" : " + readConfigurations(templateToRender, jsonFileName) + "}";
 	
 			ObjectMapper mapper = new ObjectMapper();
-			JsonNode jsonNode = mapper.readTree(value);			
+			JsonNode jsonNode = mapper.readTree(value);
+			
 			// Retrieve Spring Handlebars instances
 			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver) appContext
 					.getAutowireCapableBeanFactory().getBean("viewResolver");
 			Handlebars handlebars = handlebarsViewResolver.getHandlebars();
-			handlebars.with(new HighConcurrencyTemplateCache());
+			//handlebars.with(new HighConcurrencyTemplateCache());
+			handlebars.handlebarsJsFile("/handlebars-v3.0.3.js");
+			Context context = Context.newBuilder(jsonNode)
+					.resolver(JsonNodeValueResolver.INSTANCE).build();
+
+			Template templateObj = handlebars.compile("option1/" + templateToRender);
+			templateObj.apply(context);
+			
+			String output = handlebars.compile("option1/main-layout").apply(context);
+			response.setContentType("text/html");
+			System.out.println("Final Output :"+output);
+			System.out.println("value: " + jsonNode.toString());
+			//return output;
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return mav;
+	}
+	
+	@RequestMapping("/option1")
+	@ResponseBody
+	public String option1Controller(
+			HttpServletRequest request,
+			HttpServletResponse response,
+			@RequestParam(value = "template", required = false) String template,
+			@RequestParam(value = "locale", required = false) String locale) {
+		String templateToRender = "example-module-a";
+		if (template != null) {
+			templateToRender = template;
+		}
+		String jsonFileName = "en.json";
+		if ("sp".equalsIgnoreCase(locale)) {
+			jsonFileName = "sp.json";
+		}
+		try {
+			String value = "{ \"config\" : " + readConfigurations(templateToRender, jsonFileName) + "}";
+	
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode jsonNode = mapper.readTree(value);
+			
+			// Retrieve Spring Handlebars instances
+			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver) appContext
+					.getAutowireCapableBeanFactory().getBean("viewResolver");
+			Handlebars handlebars = handlebarsViewResolver.getHandlebars();
+			handlebars.handlebarsJsFile("/handlebars-v3.0.3.js");
+			//handlebars.with(new HighConcurrencyTemplateCache());
 
 			Context context = Context.newBuilder(jsonNode)
 					.resolver(JsonNodeValueResolver.INSTANCE).build();
@@ -98,7 +149,7 @@ public class HomeController {
 					.apply(context);
 			String output = handlebars.compile("option1/main-layout").apply(context);
 			response.setContentType("text/html");
-
+			System.out.println("Final Output :"+output);
 			System.out.println("value: " + jsonNode.toString());
 			return output;
 		}
@@ -133,14 +184,16 @@ public class HomeController {
 			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver) appContext
 					.getAutowireCapableBeanFactory().getBean("viewResolver");
 			Handlebars handlebars = handlebarsViewResolver.getHandlebars();
-
+			handlebars.handlebarsJsFile("/handlebars-v3.0.3.js");
 			MessageHelper messageHelper = new MessageHelper();
 			handlebars.registerHelpers(messageHelper);
 			CustomHelper customHelper = new CustomHelper();
 			handlebars.registerHelpers(customHelper);
 			mav.addObject("config", jsonNode);
+			//mav.addObject("something", "{{> option2/example-module-a2}}");
+		//	
 			handlebars.with(new HighConcurrencyTemplateCache());
-			mav.addObject("template", "example-module-a2");
+			mav.addObject("template", "option2/example-module-a2");
 
 		}
 

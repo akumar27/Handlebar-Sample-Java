@@ -9,17 +9,9 @@
 
 <div class="page-main">
 	<div id="doc-main">    
-	
-	{{#if_eq template "example-module-a2"}}		
-		{{> option2/example-module-a2}}
-	{{/if_eq}}
-	
-	{{#if_eq template "example-module-b2"}}
-		{{> option2/example-module-b2}}
-	{{/if_eq}}
-	
- 	{{#block "modulecontent" }}
-	{{/block}}
+	{{something}}
+	{{#process_Module template config}}			
+	{{/process_Module}}		
   </div> <!-- /.doc-main -->
 </div> <!-- /.page-main -->
 <div id="doc-footer">
