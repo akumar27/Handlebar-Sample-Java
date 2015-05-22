@@ -23,7 +23,7 @@ public class CustomHelper {
 	public CustomHelper() {
 	}
 
-	public CharSequence process_Module(Object templateToProcess, Object data, Options options)
+	public CharSequence process_module(Object templateToProcess, Object data, Options options)
 			throws IOException {
 		/*
 		 * if (!text1.equals(text2)) { return
