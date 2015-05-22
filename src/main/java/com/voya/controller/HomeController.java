@@ -1,6 +1,7 @@
 package com.voya.controller;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -39,6 +40,115 @@ public class HomeController {
 
 	@Autowired
 	private ApplicationContext appContext;
+
+	private String readConfigurations(String templateToRender,
+			String jsonFileName) throws IOException {
+		InputStream inputStream = null;
+		StringBuilder sb = new StringBuilder();
+		String line;
+		try {
+			inputStream = servletContext.getResourceAsStream("/WEB-INF/config/"
+					+ templateToRender + "/" + jsonFileName);
+			BufferedReader bufferedReader = new BufferedReader(
+					new InputStreamReader(inputStream));
+
+			while ((line = bufferedReader.readLine()) != null) {
+				sb.append(line);
+			}
+		} catch (IOException e) {
+			// handle Exception here
+		} finally {
+			if (inputStream != null) {
+				inputStream.close();
+			}
+		}
+		return sb.toString();
+	}
+
+	@RequestMapping("/option1")
+	@ResponseBody
+	public String option1Controller(
+			HttpServletRequest request,
+			HttpServletResponse response,
+			@RequestParam(value = "template", required = false) String template,
+			@RequestParam(value = "locale", required = false) String locale) {
+		String templateToRender = "option1/example-module-a";
+		if (template != null) {
+			templateToRender = template;
+		}
+		String jsonFileName = "en.json";
+		if ("sp".equalsIgnoreCase(locale)) {
+			jsonFileName = "sp.json";
+		}
+		try {
+			String value = "{ \"config\" : " + readConfigurations(templateToRender, jsonFileName) + "}";
+	
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode jsonNode = mapper.readTree(value);			
+			// Retrieve Spring Handlebars instances
+			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver) appContext
+					.getAutowireCapableBeanFactory().getBean("viewResolver");
+			Handlebars handlebars = handlebarsViewResolver.getHandlebars();
+			handlebars.with(new HighConcurrencyTemplateCache());
+
+			Context context = Context.newBuilder(jsonNode)
+					.resolver(JsonNodeValueResolver.INSTANCE).build();
+
+			handlebars.compile("option1/" + templateToRender)
+					.apply(context);
+			String output = handlebars.compile("option1/main-layout").apply(context);
+			response.setContentType("text/html");
+
+			System.out.println("value: " + jsonNode.toString());
+			return output;
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return "";
+	}
+
+	@RequestMapping(value = "/option2")
+	public ModelAndView embeddedController(
+			HttpServletRequest request,
+			@RequestParam(value = "template", required = false) String template,
+			@RequestParam(value = "locale", required = false) String locale) {
+		ModelAndView mav = new ModelAndView("option2/main-layout2");
+		try {
+			if (template == null) {
+				template = "example-module-a";
+				;
+			}
+			String jsonFileName = "en.json";
+			if ("sp".equalsIgnoreCase(locale)) {
+				jsonFileName = "sp.json";
+			}			
+			String value = readConfigurations(template, jsonFileName);
+
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode jsonNode = mapper.readTree(value);
+
+			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver) appContext
+					.getAutowireCapableBeanFactory().getBean("viewResolver");
+			Handlebars handlebars = handlebarsViewResolver.getHandlebars();
+
+			MessageHelper messageHelper = new MessageHelper();
+			handlebars.registerHelpers(messageHelper);
+			CustomHelper customHelper = new CustomHelper();
+			handlebars.registerHelpers(customHelper);
+			mav.addObject("config", jsonNode);
+			handlebars.with(new HighConcurrencyTemplateCache());
+			mav.addObject("template", "example-module-a2");
+
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		return mav;
+	}
 
 	@RequestMapping("/home")
 	@ResponseBody
@@ -86,90 +196,6 @@ public class HomeController {
 		return "";
 	}
 
-	@RequestMapping("/option1")
-	@ResponseBody
-	public String option1Controller(
-			HttpServletRequest request,
-			HttpServletResponse response,
-			@RequestParam(value = "template", required = false) String template,
-			@RequestParam(value = "locale", required = false) String locale) {
-		// ModelAndView mav = new ModelAndView("main-layout");
-		String templateToRender = "example-module-a";
-		if (template != null) {
-			templateToRender = template;
-		}
-		String jsonFileName = "en.json";
-		if ("sp".equalsIgnoreCase(locale)) {
-			jsonFileName = "sp.json";
-		}
-		try {
-
-			InputStream inputStream = null;
-			StringBuilder sb2 = new StringBuilder();
-			String line;
-			try {
-				inputStream = servletContext
-						.getResourceAsStream("/WEB-INF/config/"
-								+ templateToRender + "/" + jsonFileName);
-				BufferedReader bufferedReader = new BufferedReader(
-						new InputStreamReader(inputStream));
-
-				while ((line = bufferedReader.readLine()) != null) {
-					sb2.append(line);
-				}
-			} finally {
-				if (inputStream != null) {
-					inputStream.close();
-				}
-			}
-			//option1
-			String value = sb2.toString(); // "{\"title\": \"First Post\",\"story\": {\"intro\": \"Before the jump\",\"body\": \"After the jump\"}}";
-
-			String path = request.getSession().getServletContext()
-					.getRealPath("/WEB-INF/hbs/option1");
-			System.out.println("path: " + path);
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode jsonNode = mapper.readTree(value);
-			TemplateLoader loader = new FileTemplateLoader(path);
-			// loader.setPrefix("/WEB-INF/hbs");
-			loader.setSuffix(".hbs");
-			Handlebars handlebars = new Handlebars(loader);
-
-			handlebars.with(new HighConcurrencyTemplateCache());
-			Context context = Context.newBuilder(jsonNode)
-					.resolver(JsonNodeValueResolver.INSTANCE).build();
-			//option1
-			/*
-			 * String output = handlebars .compileInline(
-			 * "<a href='home'>Home</a><div class=\"entry\"> <h1>{{title}}</h1> {{#with story}}  <div class=\"intro\">{{{intro}}}"
-			 * + "</div> <div class=\"body\">{{{body}}}</div>{{/with}}</div>")
-			 * .apply(context);
-			 */
-			String output2 = handlebars.compile(templateToRender)
-					.apply(context);
-			String output = handlebars.compile("main-layout").apply(context);
-
-			// mav.addObject("result", output);
-			// mav.addObject("jsonObject: " + jsonNode);
-
-			response.setContentType("text/html");
-			// response.setCharacterEncoding("UTF-8");
-			System.out.println("output1: " + output);
-			System.out.println("output2: " + output2);
-			System.out.println("value: " + jsonNode.toString());
-
-			StringBuffer sb = new StringBuffer(output).append(output2);
-			return sb.toString();
-
-		}
-
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return "";
-	}
-
 	@RequestMapping("/test")
 	@ResponseBody
 	public String option2Controller(
@@ -206,7 +232,7 @@ public class HomeController {
 					inputStream.close();
 				}
 			}
-			//test
+			// test
 			String value = sb2.toString(); // "{\"title\": \"First Post\",\"story\": {\"intro\": \"Before the jump\",\"body\": \"After the jump\"}}";
 
 			String path = request.getSession().getServletContext()
@@ -231,16 +257,18 @@ public class HomeController {
 			 */
 			// String output2 =
 			// handlebars.compile(templateToRender).apply(context);
-		//	String output = handlebars.compile("main-layout2").apply(context);
-			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver)appContext.getAutowireCapableBeanFactory().getBean("viewResolver");
-			//Handlebars handlebars = handlebarsViewResolver.getHandlebars();
+			// String output =
+			// handlebars.compile("main-layout2").apply(context);
+			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver) appContext
+					.getAutowireCapableBeanFactory().getBean("viewResolver");
+			// Handlebars handlebars = handlebarsViewResolver.getHandlebars();
 			System.out.println("object " + handlebarsViewResolver);
 			// mav.addObject("result", output);
 			// mav.addObject("jsonObject: " + jsonNode);
 
 			response.setContentType("text/html");
 			// response.setCharacterEncoding("UTF-8");
-		//	System.out.println("output1: " + output);
+			// System.out.println("output1: " + output);
 			// System.out.println("output2: " + output2);
 			System.out.println("value: " + jsonNode.toString());
 
@@ -256,62 +284,4 @@ public class HomeController {
 		return "";
 	}
 
-	@RequestMapping(value = "/option2")
-	public ModelAndView embeddedController(HttpServletRequest request,
-			@RequestParam(value = "template", required = false) String template,
-			@RequestParam(value = "locale", required = false) String locale) {
-		ModelAndView mav = new ModelAndView("option2/main-layout2");
-		try {
-			
-			//String templateToRender = "example-module-a";
-			if (template == null) {
-				template = "example-module-a";;
-			}
-			String jsonFileName = "en.json";
-			if ("sp".equalsIgnoreCase(locale)) {
-				jsonFileName = "sp.json";
-			}
-			
-			InputStream inputStream = null;
-			StringBuilder sb2 = new StringBuilder();
-			String line;
-			try {
-				inputStream = servletContext
-						.getResourceAsStream("/WEB-INF/config/"
-								+ template + "/" + jsonFileName);
-				BufferedReader bufferedReader = new BufferedReader(
-						new InputStreamReader(inputStream));
-
-				while ((line = bufferedReader.readLine()) != null) {
-					sb2.append(line);
-				}
-			} finally {
-				if (inputStream != null) {
-					inputStream.close();
-				}
-			}
-			
-			String value = sb2.toString();
-
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode jsonNode = mapper.readTree(value);
-			
-			HandlebarsViewResolver handlebarsViewResolver = (HandlebarsViewResolver)appContext.getAutowireCapableBeanFactory().getBean("viewResolver");
-			Handlebars handlebars = handlebarsViewResolver.getHandlebars();
-			
-			MessageHelper messageHelper = new MessageHelper();
-			handlebars.registerHelpers(messageHelper);
-			CustomHelper customHelper = new CustomHelper();
-			handlebars.registerHelpers(customHelper);
-			mav.addObject("config" , jsonNode);
-			handlebars.with(new HighConcurrencyTemplateCache());
-			mav.addObject("template", "example-module-a2");
-			
-		}
-
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-		return mav;
-	}
 }
